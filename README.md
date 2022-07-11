@@ -1,2 +1,2 @@
 # LinkTracker
-Draw a line between you and your mark.
+Draw a line between you and your marker.
