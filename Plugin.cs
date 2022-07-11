@@ -102,8 +102,8 @@ namespace LinkTracker
             ClientState.TerritoryChanged += TerritoryChanged;
             TerritoryChanged(this, ClientState.TerritoryType);
 
-            
-            foreach(XivChatType types in Enum.GetValues(typeof(XivChatType)))
+
+            foreach (XivChatType types in Enum.GetValues(typeof(XivChatType)))
             {
                 xivchattype.Add(types, true);
                 //Chat.Print($"{types}");
@@ -111,7 +111,8 @@ namespace LinkTracker
             foreach (var type in xivchattype.Keys)
             {
                 //Plugin.Chat.Print($"1,{type},{Configuration.typedic[type]},{xivchattype[type]}");
-                xivchattype[type] = Configuration.typedic[type];
+                if(Configuration.typedic.ContainsKey(type))
+                    xivchattype[type] = Configuration.typedic[type];
             }
 
         }

@@ -80,7 +80,7 @@ namespace LinkTracker
             Plugin.mutesonar = Configuration.mutesonar;
             showmapdistance = Configuration.showmapdistance;
             Plugin.isautotrack = Configuration.isautotrack;
-            
+
         }
 
         public void Dispose()
@@ -364,11 +364,13 @@ namespace LinkTracker
             int i = 0;
             if (ImGui.Button("All"))
             {
+                saveconfig();
                 checkall = true;
             }
             ImGui.SameLine();
             if (ImGui.Button("None"))
             {
+                saveconfig();
                 uncheckall = true;
             }
             bool tempfilter = false;
@@ -379,10 +381,15 @@ namespace LinkTracker
                 var b = types.Key;
                 if ((i + 1) % 4 != 0 && i!=0)
                     ImGui.SameLine();
-                
-                
-                    
-                ImGui.Checkbox($"{b.ToString()}###{b.ToString()}", ref a);
+
+
+
+                if (ImGui.Checkbox($"{b.ToString()}###{b.ToString()}", ref a))
+                {
+                    //Plugin.Chat.Print("1");
+                    saveconfig();
+
+                }
                 
 
 

@@ -22,7 +22,7 @@ namespace LinkTracker
         public float linewidth { get; set; } = 10;
         public bool isautotrack { get; set; } = false;
 
-        public Dictionary<XivChatType, bool> typedic { get; set; }
+        public Dictionary<XivChatType, bool> typedic { get; set; } = new Dictionary<XivChatType, bool>();
 
         // the below exist just to make saving less cumbersome
 
