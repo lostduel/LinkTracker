@@ -166,7 +166,7 @@ namespace LinkTracker
             if (!ImGui.BeginTabItem("Links"))
                 return;
             
-            if(showdistance)
+            if(showdistance && distance!=0)
                 ImGui.Text(distance.ToString());
             if(ImGui.Checkbox("AutoTrack", ref Plugin.isautotrack))
             {
@@ -335,7 +335,7 @@ namespace LinkTracker
             ImGui.Checkbox("Always show map", ref alwaysmap);
             if (!alwaysmap)
             {
-                ImGui.Checkbox("Show map above distance", ref showmapdistance);
+                ImGui.Checkbox("Show map over distance", ref showmapdistance);
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("Automatically open the map when the link is too far away");
                 if (showmapdistance)
