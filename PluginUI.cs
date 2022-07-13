@@ -10,6 +10,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using LinkTracker;
 using Num = System.Numerics;
 using Dalamud.Interface;
+using Dalamud.Game.Text.SeStringHandling;
 
 namespace LinkTracker
 {
@@ -48,6 +49,7 @@ namespace LinkTracker
         public bool typefilter=false;
         public bool playerfilter=false;
 
+        public Vector2 realspo = new Vector2(0,0);
 
         public Vector4 goldline = new Vector4(229, 204, 128,255);
         public Vector4 pinkline = new Vector4(226, 104, 168, 255);
@@ -79,7 +81,8 @@ namespace LinkTracker
             alwaysmap = Configuration.alwaysmap;
             Plugin.mutesonar = Configuration.mutesonar;
             showmapdistance = Configuration.showmapdistance;
-            Plugin.isautotrack = Configuration.isautotrack;
+            //Plugin.isautotrack = Configuration.isautotrack;
+            Plugin.filtertime = Configuration.filtertime;
 
         }
 
@@ -132,7 +135,7 @@ namespace LinkTracker
             {
                 
                 ImGui.SetNextWindowSize(new Vector2(375, 330), ImGuiCond.FirstUseEver);
-                ImGui.SetNextWindowSizeConstraints(new Vector2(375, 330), new Vector2(float.MaxValue, float.MaxValue));
+                ImGui.SetNextWindowSizeConstraints(new Vector2(375, 150), new Vector2(float.MaxValue, float.MaxValue));
                 
                 if (ImGui.Begin("Link Tracker", ref chatLinksVisible))
                 {
@@ -170,7 +173,7 @@ namespace LinkTracker
                 ImGui.Text(distance.ToString());
             if(ImGui.Checkbox("AutoTrack", ref Plugin.isautotrack))
             {
-                Plugin.Chat.Print("click");
+                //Plugin.Chat.Print("click");
                 if (!Plugin.isautotrack)
                 {            
                     isdraw = false;
@@ -184,8 +187,13 @@ namespace LinkTracker
                 isdraw = false;
                 Plugin.Link.Clear();
             }
-                
-            
+
+
+            //ImGui.SameLine();
+            //if (ImGui.Button("TrackFlag"))
+            //{
+            //    Plugin.Chat.Print("<flag>");
+            //}
 
             if (ImGui.BeginTable("Links", 4, ImGuiTableFlags.Resizable))
             {
@@ -251,11 +259,15 @@ namespace LinkTracker
 
                         ImGui.TableNextRow();
                         _ = ImGui.TableNextColumn();
-                        ImGui.Text($"({link.ctype.Count}){thetype}");
+                        string typecount = link.ctype.Count > 1 ? $"({link.ctype.Count})" : "";
+                        ImGui.Text($"{typecount}{thetype}");
+                        if (ImGui.IsItemHovered())
+                            ImGui.SetTooltip($"{link.dateTime}");
                         _ = ImGui.TableNextColumn();
-                        //ImGui.Text(link.name);
 
-                        if (ImGui.Button($"({link.name.Count}){thename}"))
+                        //ImGui.Text(link.name);
+                        string namecount = link.name.Count > 1 ? $"({link.name.Count})" : "";
+                        if (ImGui.Button($"{namecount}{thename}"))
                         {
                             namefilter = !namefilter;
                             
@@ -307,7 +319,24 @@ namespace LinkTracker
                         }
                         _ = ImGui.TableNextColumn();
                         ImGui.Text($"{link.link.PlaceName} {link.link.CoordinateString}");
-                    }
+                        if (ImGui.IsItemClicked())
+                        {
+                            Plugin.Chat.PrintChat(new Dalamud.Game.Text.XivChatEntry
+                            {
+                                Name = Plugin.ClientState.LocalPlayer.Name,
+                                SenderId = Plugin.ClientState.LocalPlayer.NameId,
+                                Message = SeString.CreateMapLink(link.link.TerritoryType.RowId, link.link.TerritoryType.Map.Value.RowId, link.link.XCoord, link.link.YCoord, 0f),
+                                Type = Dalamud.Game.Text.XivChatType.CrossLinkShell1
+                            });
+                            
+                        }
+                        
+
+
+
+
+
+                }
                 }
                 catch (Exception)
                 {
@@ -323,6 +352,9 @@ namespace LinkTracker
             if (!ImGui.BeginTabItem("Configs"))
                 return;
             ImGui.InputFloat("Width", ref linewidth);
+            ImGui.InputDouble("FilterTime", ref Plugin.filtertime);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Seconds to filter same link");
             ImGui.Checkbox("Autostop", ref isautostop);
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Automatically stop tracking when you reach the target distance");
@@ -550,8 +582,9 @@ namespace LinkTracker
             Configuration.isalert = isalert;
             Configuration.alwaysmap=alwaysmap;
             Configuration.mutesonar = Plugin.mutesonar;
-            Configuration.isautotrack = Plugin.isautotrack;
+            //Configuration.isautotrack = Plugin.isautotrack;
             Configuration.showmapdistance=showmapdistance;
+            Configuration.filtertime = Plugin.filtertime;
             foreach(var type in Plugin.xivchattype.Keys)
             {
                 if (Configuration.typedic.ContainsKey(type))
@@ -611,16 +644,37 @@ ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
                 distance = Math.Sqrt(Math.Abs(Math.Pow(Plugin.ClientState.LocalPlayer.Position.X - (drawlink.link.RawX / 1000), 2) + Math.Pow(Plugin.ClientState.LocalPlayer.Position.Z - (drawlink.link.RawY / 1000), 2)));
 
 
-                if (distance > ldistance)
+
+                
+                double angels = Math.Atan(Math.Abs(drawlink.link.RawX / 1000 - Plugin.ClientState.LocalPlayer.Position.X) / Math.Abs(drawlink.link.RawY / 1000 - Plugin.ClientState.LocalPlayer.Position.Z));
+                if (drawlink.link.RawX / 1000 - Plugin.ClientState.LocalPlayer.Position.X < 0)
+                    angels = -angels;
+                if (drawlink.link.RawY / 1000 - Plugin.ClientState.LocalPlayer.Position.Z > 0)
+                    angels = Math.Sign(angels) * Math.PI - angels;
+                //ImGui.Text(angels.ToString());
+                //Math.Abs(Math.Abs(angels + Plugin.ClientState.LocalPlayer.Rotation) - Math.PI).ToString();
+
+
+
+
+                if (Math.Abs(Math.Abs(angels + Plugin.ClientState.LocalPlayer.Rotation) - Math.PI)>Math.PI/2)
                     linecolor = transformcolor(wrongline);
                 else
                     linecolor = switchcolor(distance);
                 Plugin.GameGui.WorldToScreen(Plugin.ClientState.LocalPlayer.Position, out Vector2 spo);
                 Plugin.GameGui.WorldToScreen(new Vector3(drawlink.link.RawX / 1000, Plugin.ClientState.LocalPlayer.Position.Y, drawlink.link.RawY / 1000), out Vector2 spo2);
-
+                
+                //if (spo2.X >= 0 && spo2.X <= ImGui.GetWindowSize().X)
+                //    realspo.X = spo2.X;
+                //else
+                //    spo2.X = realspo.X;
+                //if (spo2.Y >= 0 && spo2.Y <= ImGui.GetWindowSize().Y)
+                //    realspo.Y = spo2.Y;
+                //else
+                //    spo2.Y = realspo.Y;
                 ImGui.GetWindowDrawList().AddLine(new Vector2(spo.X, spo.Y), new Vector2(spo2.X, spo2.Y), ImGui.GetColorU32(linecolor), linewidth);
 
-                ldistance = distance;
+                //ldistance = distance;
                 if (distance <= stopdistance)
                 {
                     if (isalert && !arrived)
@@ -668,5 +722,7 @@ ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
             }
             return filtered;
         }
+
+        
     }
 }
