@@ -49,7 +49,7 @@ namespace LinkTracker
         public bool typefilter=false;
         public bool playerfilter=false;
 
-        public Vector2 realspo = new Vector2(0,0);
+        public Vector4 arrivedcolor = new Vector4(1f, 1f, 1f, 1f);
 
         public Vector4 goldline = new Vector4(229, 204, 128,255);
         public Vector4 pinkline = new Vector4(226, 104, 168, 255);
@@ -189,11 +189,12 @@ namespace LinkTracker
             }
 
 
-            //ImGui.SameLine();
-            //if (ImGui.Button("TrackFlag"))
-            //{
-            //    Plugin.Chat.Print("<flag>");
-            //}
+            ImGui.SameLine();
+            if (ImGui.Button("TrackFlag"))
+            {
+                //Plugin.Chat.Print("<flag>");
+                
+            }
 
             if (ImGui.BeginTable("Links", 4, ImGuiTableFlags.Resizable))
             {
@@ -656,22 +657,19 @@ ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
 
 
 
-
-                if (Math.Abs(Math.Abs(angels + Plugin.ClientState.LocalPlayer.Rotation) - Math.PI)>Math.PI/2)
-                    linecolor = transformcolor(wrongline);
+                if (arrived)
+                    linecolor = arrivedcolor;
                 else
-                    linecolor = switchcolor(distance);
+                {
+                    if (Math.Abs(Math.Abs(angels + Plugin.ClientState.LocalPlayer.Rotation) - Math.PI) > Math.PI / 2)
+                        linecolor = transformcolor(wrongline);
+                    else
+                        linecolor = switchcolor(distance);
+                }
+                
                 Plugin.GameGui.WorldToScreen(Plugin.ClientState.LocalPlayer.Position, out Vector2 spo);
                 Plugin.GameGui.WorldToScreen(new Vector3(drawlink.link.RawX / 1000, Plugin.ClientState.LocalPlayer.Position.Y, drawlink.link.RawY / 1000), out Vector2 spo2);
                 
-                //if (spo2.X >= 0 && spo2.X <= ImGui.GetWindowSize().X)
-                //    realspo.X = spo2.X;
-                //else
-                //    spo2.X = realspo.X;
-                //if (spo2.Y >= 0 && spo2.Y <= ImGui.GetWindowSize().Y)
-                //    realspo.Y = spo2.Y;
-                //else
-                //    spo2.Y = realspo.Y;
                 ImGui.GetWindowDrawList().AddLine(new Vector2(spo.X, spo.Y), new Vector2(spo2.X, spo2.Y), ImGui.GetColorU32(linecolor), linewidth);
 
                 //ldistance = distance;

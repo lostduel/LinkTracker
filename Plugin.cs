@@ -198,14 +198,28 @@ namespace LinkTracker
         {
             foreach (XivChatType types in Enum.GetValues(typeof(XivChatType)))
             {
-                xivchattype.Add(types, true);
+                if (!xivchattype.ContainsKey(types))
+                {
+                    if (Configuration.typedic.ContainsKey(types))
+                        xivchattype.Add(types, Configuration.typedic[types]);
+                    else
+                        xivchattype.Add(types, true);
+                }
+                else
+                {
+                    if (Configuration.typedic.ContainsKey(types))
+                        xivchattype[types] = Configuration.typedic[types];
+                    else
+                        xivchattype[types] = true;
+                }
+
+                    
                 //Chat.Print($"{types}");
             }
             foreach (var type in xivchattype.Keys)
             {
                 //Plugin.Chat.Print($"1,{type},{Configuration.typedic[type]},{xivchattype[type]}");
-                if (Configuration.typedic.ContainsKey(type))
-                    xivchattype[type] = Configuration.typedic[type];
+                
             }
             DrawMapNightUI();
         }
