@@ -29,6 +29,8 @@ namespace LinkTracker
         public double distance;
         public double ldistance=1000;
         public Vector4 linecolor = new Vector4(1f,1f,1f,1f);
+        Vector3 dpoint = new Vector3(0,0,0);
+        //Vector3 dpoints = new Vector3(0, 0, 0);
         private Plugin Plugin { get; init; }
 
         private bool trackLinks = true;
@@ -42,12 +44,19 @@ namespace LinkTracker
         public float stopdistance = 40f;
         public float mapdistance = 500f;
         public float linewidth = 10;
+        public float linelength = 5;
         public bool checkall=false;
         public bool uncheckall=false;
         public bool checkallplayer = false;
         public bool uncheckallplayer = false;
         public bool typefilter=false;
         public bool playerfilter=false;
+        public bool showdirection = false;
+        public bool showdirectionwhendraw = false;
+        public float directionwidth = 10f;
+        public float directionlength = 1f;
+        
+        public DateTime savetime = DateTime.Now; 
 
         public Vector4 arrivedcolor = new Vector4(1f, 1f, 1f, 1f);
 
@@ -83,7 +92,12 @@ namespace LinkTracker
             showmapdistance = Configuration.showmapdistance;
             //Plugin.isautotrack = Configuration.isautotrack;
             Plugin.filtertime = Configuration.filtertime;
-
+            typefilter = Configuration.typefilter;
+            showdirection = Configuration.showdirection;
+            showdirectionwhendraw = Configuration.showdirectionwhendraw;
+            linelength = Configuration.linelength;
+            directionwidth = Configuration.directionwidth;
+            directionlength = Configuration.directionlength;
         }
 
         public void Dispose()
@@ -106,6 +120,7 @@ namespace LinkTracker
             
             if (Plugin.isautotrack && lastlink!=null)
             {
+                
                 autolink = null;
                 for (int i = Plugin.Link.Count - 1; i >= 0; i--)
                 {
@@ -123,6 +138,13 @@ namespace LinkTracker
                 }
                 
             }
+
+            if (((isdraw || Plugin.isautotrack) && showdirectionwhendraw) || (showdirection && !showdirectionwhendraw))
+                drawdirection();
+
+
+
+
         }
 
         public void DrawChatLinksWindow()
@@ -161,6 +183,12 @@ namespace LinkTracker
                 // this happens when we remove the last item in a list for a given key in the dictionary
                 // we don't want to crash, just keep rendering
             }
+            if (Plugin.DiffSecond(savetime, DateTime.Now))
+            {
+                saveconfig();
+                savetime = DateTime.Now;
+            }
+
 
         }
 
@@ -189,12 +217,12 @@ namespace LinkTracker
             }
 
 
-            ImGui.SameLine();
-            if (ImGui.Button("TrackFlag"))
-            {
-                //Plugin.Chat.Print("<flag>");
+            // ImGui.SameLine();
+            //if (ImGui.Button("TrackFlag"))
+            //{
+            //    //Plugin.Chat.Print("<flag>");
                 
-            }
+            //}
 
             if (ImGui.BeginTable("Links", 4, ImGuiTableFlags.Resizable))
             {
@@ -271,6 +299,7 @@ namespace LinkTracker
                         if (ImGui.Button($"{namecount}{thename}"))
                         {
                             namefilter = !namefilter;
+                            playerfilter = !namefilter;
                             
                             foreach (var player in Plugin.playerlist.Keys)
                             {
@@ -353,6 +382,7 @@ namespace LinkTracker
             if (!ImGui.BeginTabItem("Configs"))
                 return;
             ImGui.InputFloat("Width", ref linewidth);
+            ImGui.InputFloat("Length", ref linelength);
             ImGui.InputDouble("FilterTime", ref Plugin.filtertime);
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Seconds to filter same link");
@@ -365,14 +395,53 @@ namespace LinkTracker
                 ImGui.SetTooltip("Show a message when you reach the target distance");
             if(isautostop || isalert)
                 ImGui.InputFloat("target distance", ref stopdistance);
+            ImGui.Checkbox("Show direction", ref showdirection);
+
+            if (showdirection)
+            {
+                ImGui.Text("  ");
+                ImGui.SameLine();
+                ImGui.Checkbox("Show with line", ref showdirectionwhendraw);
+
+                //if (!showdirectionwhendraw)
+                //{
+                //    ImGui.SameLine();
+                //    ImGui.Checkbox("Always show direction", ref alwaysshowdirection);
+                //}
+                //else
+                //{
+                //    alwaysshowdirection = false;
+                //}
+
+                ImGui.Text("  ");
+                ImGui.SameLine();
+                ImGui.InputFloat("Direction width", ref directionwidth);
+                ImGui.Text("  ");
+                ImGui.SameLine();
+                ImGui.InputFloat("Direction length", ref directionlength);
+
+            }
+
+
+
+
+
+
             ImGui.Checkbox("Always show map", ref alwaysmap);
             if (!alwaysmap)
             {
+                ImGui.Text("  ");
+                ImGui.SameLine();
                 ImGui.Checkbox("Show map over distance", ref showmapdistance);
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("Automatically open the map when the link is too far away");
                 if (showmapdistance)
+                {
+                    ImGui.Text("  ");
+                    ImGui.SameLine();
                     ImGui.InputFloat("Show map distance", ref mapdistance);
+                }
+                    
             }
             ImGui.Checkbox("Show distance", ref showdistance);
             if (ImGui.IsItemHovered())
@@ -586,7 +655,13 @@ namespace LinkTracker
             //Configuration.isautotrack = Plugin.isautotrack;
             Configuration.showmapdistance=showmapdistance;
             Configuration.filtertime = Plugin.filtertime;
-            foreach(var type in Plugin.xivchattype.Keys)
+            Configuration.typefilter = typefilter;
+            Configuration.showdirection = showdirection;
+            Configuration.showdirectionwhendraw = showdirectionwhendraw;
+            Configuration.linelength = linelength;
+            Configuration.directionwidth = directionwidth;
+            Configuration.directionlength = directionlength;
+            foreach (var type in Plugin.xivchattype.Keys)
             {
                 if (Configuration.typedic.ContainsKey(type))
                 {
@@ -666,12 +741,20 @@ ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
                     else
                         linecolor = switchcolor(distance);
                 }
-                
+                Vector2 spo2;
+                if(distance>linelength)
+                {
+                    Plugin.GameGui.WorldToScreen(new Vector3((float)(Plugin.ClientState.LocalPlayer.Position.X+(drawlink.link.RawX/1000 - Plugin.ClientState.LocalPlayer.Position.X) * linelength / distance), Plugin.ClientState.LocalPlayer.Position.Y, (float)(Plugin.ClientState.LocalPlayer.Position.Z+(drawlink.link.RawY/1000 - Plugin.ClientState.LocalPlayer.Position.Z) * linelength / distance)), out spo2);
+                }
+                else
+                    Plugin.GameGui.WorldToScreen(new Vector3(drawlink.link.RawX / 1000, Plugin.ClientState.LocalPlayer.Position.Y, drawlink.link.RawY / 1000), out spo2);
+
                 Plugin.GameGui.WorldToScreen(Plugin.ClientState.LocalPlayer.Position, out Vector2 spo);
-                Plugin.GameGui.WorldToScreen(new Vector3(drawlink.link.RawX / 1000, Plugin.ClientState.LocalPlayer.Position.Y, drawlink.link.RawY / 1000), out Vector2 spo2);
+                
                 
                 ImGui.GetWindowDrawList().AddLine(new Vector2(spo.X, spo.Y), new Vector2(spo2.X, spo2.Y), ImGui.GetColorU32(linecolor), linewidth);
 
+                
                 //ldistance = distance;
                 if (distance <= stopdistance)
                 {
@@ -721,6 +804,42 @@ ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
             return filtered;
         }
 
-        
+        public void drawdirection()
+        {
+
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Num.Vector2(0, 0));
+            ImGuiHelpers.ForceNextWindowMainViewport();
+            ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Num.Vector2(0, 0));
+            ImGui.Begin("DrawDirections",
+ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoTitleBar |
+ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
+            ImGui.SetWindowSize(ImGui.GetIO().DisplaySize);
+
+
+            
+            if (Plugin.ClientState.LocalPlayer != null)
+            {
+                double dx = Math.Sin(Plugin.ClientState.LocalPlayer.Rotation)*directionlength;
+                double dy = Math.Cos(Plugin.ClientState.LocalPlayer.Rotation)*directionlength;
+
+                dpoint = new Vector3((float)(Plugin.ClientState.LocalPlayer.Position.X + dx), Plugin.ClientState.LocalPlayer.Position.Y, (float)(Plugin.ClientState.LocalPlayer.Position.Z + dy));
+                //dpoints = new Vector3((float)dx, Plugin.ClientState.LocalPlayer.Rotation, (float)dy);
+
+                Plugin.GameGui.WorldToScreen(Plugin.ClientState.LocalPlayer.Position, out Vector2 spo);
+                Plugin.GameGui.WorldToScreen(dpoint, out Vector2 spo3);
+                ImGui.GetWindowDrawList().AddLine(new Vector2(spo.X, spo.Y), new Vector2(spo3.X, spo3.Y), ImGui.GetColorU32(arrivedcolor), directionwidth);
+
+
+
+            }
+
+
+
+
+
+            ImGui.PopStyleVar();
+        }
+
+
     }
 }

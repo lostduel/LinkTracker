@@ -20,8 +20,18 @@ namespace LinkTracker
         public float stopdistance { get; set; } = 40f;
         public float mapdistance { get; set; } = 500f;
         public float linewidth { get; set; } = 10;
-        public bool isautotrack { get; set; } = false;
+        public float linelength { get; set; } = 5;
+        //public bool isautotrack { get; set; } = false;
 
+        public double filtertime { get; set; } = 120;
+        public bool showdirection { get; set; } = false;
+        public bool showdirectionwhendraw { get; set; } = false;
+
+
+        public float directionwidth { get; set; } = 10f;
+
+        public float directionlength { get; set; } = 1f;
+        public bool typefilter { get; set; } = false;
         public Dictionary<XivChatType, bool> typedic { get; set; } = new Dictionary<XivChatType, bool>();
 
         // the below exist just to make saving less cumbersome

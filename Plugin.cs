@@ -144,8 +144,8 @@ namespace LinkTracker
                 //    Links.Add(((MapLinkPayload)link).PlaceName, new());
                 //}
                 if (!playerlist.ContainsKey(sender.TextValue))
-                    playerlist.Add(sender.TextValue, true);
-                string cor = ((MapLinkPayload)link).PlaceName + ((MapLinkPayload)link).CoordinateString;
+                    playerlist.Add(sender.TextValue, !PluginUi.playerfilter);
+                //string cor = ((MapLinkPayload)link).PlaceName + ((MapLinkPayload)link).CoordinateString;
                 //Links[((MapLinkPayload)link).PlaceName].Add(new MapLink(type,sender.TextValue[0..], message.TextValue,((MapLinkPayload)link).PlaceName, (MapLinkPayload)link));
                 for (int i = Link.Count-1;i>=0;i--)
                 {
@@ -153,15 +153,16 @@ namespace LinkTracker
                         break;
                     if ((Link[i].link.PlaceName).Equals(((MapLinkPayload)link).PlaceName))                       
                     {
-                        if (Link[i].link.CoordinateString.Equals(((MapLinkPayload)link).CoordinateString))
-                        {
-                            if (Link[i].ctype.IndexOf(type) == -1)
-                                Link[i].ctype.Add(type);
-                            if (Link[i].name.IndexOf(sender.TextValue) == -1)
-                                Link[i].name.Add(sender.TextValue);
-                            return;
-                        }
-                        else if(getdistance(Link[i].link.RawX/1000, Link[i].link.RawY/1000, ((MapLinkPayload)link).RawX/1000, ((MapLinkPayload)link).RawY/1000) <= 10)
+                        //if (Link[i].link.CoordinateString.Equals(((MapLinkPayload)link).CoordinateString))
+                        //{
+                        //    if (Link[i].ctype.IndexOf(type) == -1)
+                        //        Link[i].ctype.Add(type);
+                        //    if (Link[i].name.IndexOf(sender.TextValue) == -1)
+                        //        Link[i].name.Add(sender.TextValue);
+                        //    return;
+                        //}
+                        //else 
+                        if(getdistance(Link[i].link.RawX/1000, Link[i].link.RawY/1000, ((MapLinkPayload)link).RawX/1000, ((MapLinkPayload)link).RawY/1000) <= 20)
                         {
                             if (Link[i].ctype.IndexOf(type) == -1)
                                 Link[i].ctype.Add(type);
@@ -251,7 +252,10 @@ namespace LinkTracker
 
         public double getdistance(float x1,float y1,float x2, float y2)
         {
+            //Chat.Print(Math.Sqrt(Math.Abs(Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2))).ToString());
             return Math.Sqrt(Math.Abs(Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2)));
         }
+
+
     }
 }
